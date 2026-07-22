@@ -9,8 +9,8 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv('sonarqube-server') {
-         sh '''
-  docker run --rm -v $(pwd):/usr/src sonarsource/sonar-scanner-cli \
+        sh '''
+  docker run --rm -u $(id -u):$(id -g) -v $(pwd):/usr/src sonarsource/sonar-scanner-cli \
     -Dsonar.projectKey=cicd-demo-app \
     -Dsonar.sources=. \
     -Dsonar.exclusions=**/node_modules/**,**/*.md \
@@ -18,8 +18,7 @@ pipeline {
     -Dsonar.working.directory=.scannerwork \
     -Dsonar.host.url=$SONAR_HOST_URL \
     -Dsonar.token=$SONAR_AUTH_TOKEN
-'''
-        }
+'''        }
       }
     }
     stage('Quality Gate') {
