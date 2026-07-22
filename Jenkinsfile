@@ -9,15 +9,16 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv('sonarqube-server') {
-          sh '''
-            docker run --rm -v $(pwd):/usr/src sonarsource/sonar-scanner-cli \
-              -Dsonar.projectKey=cicd-demo-app \
-              -Dsonar.sources=. \
-              -Dsonar.exclusions=**/node_modules/**,**/*.md \
-              -Dsonar.javascript.node.maxspace=256 \
-              -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.token=$SONAR_AUTH_TOKEN
-          '''
+         sh '''
+  docker run --rm -v $(pwd):/usr/src sonarsource/sonar-scanner-cli \
+    -Dsonar.projectKey=cicd-demo-app \
+    -Dsonar.sources=. \
+    -Dsonar.exclusions=**/node_modules/**,**/*.md \
+    -Dsonar.javascript.node.maxspace=256 \
+    -Dsonar.working.directory=.scannerwork \
+    -Dsonar.host.url=$SONAR_HOST_URL \
+    -Dsonar.token=$SONAR_AUTH_TOKEN
+'''
         }
       }
     }
