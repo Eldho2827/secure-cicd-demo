@@ -1,0 +1,7 @@
+node_modules
+.git
+.sonar
+.scannerwork
+dependency-check-report
+gitleaks-report.json
+k8s
