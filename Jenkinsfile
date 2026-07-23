@@ -1,4 +1,4 @@
-﻿pipeline {
+pipeline {
   agent any
   environment {
     IMAGE = "eldho10/secure-cicd-demo"
