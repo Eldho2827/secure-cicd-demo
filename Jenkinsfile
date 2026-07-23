@@ -51,22 +51,22 @@ pipeline {
   }
 }
 
-    stage('OWASP Dependency Check') {
-      steps {
-        sh '''
-          docker run --rm -v $(pwd):/src owasp/dependency-check:latest \
-            --scan /src --format "HTML" --format "JSON" \
-            --failOnCVSS 7 --out /src/dependency-check-report \
-            --project cicd-demo-app || true
-        '''
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
-        }
-      }
+   stage('OWASP Dependency Check') {
+  steps {
+    sh '''
+      mkdir -p dependency-check-report
+      docker run --rm -u $(id -u):$(id -g) -v $(pwd):/src owasp/dependency-check:latest \
+        --scan /src --format "HTML" --format "JSON" \
+        --failOnCVSS 7 --out /src/dependency-check-report \
+        --project cicd-demo-app
+    '''
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
     }
-
+  }
+}
     stage('Build Image') {
       steps {
         sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
