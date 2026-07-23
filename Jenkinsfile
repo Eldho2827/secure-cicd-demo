@@ -1,21 +1,19 @@
-pipeline {
+﻿pipeline {
   agent any
   environment {
     IMAGE = "eldho10/secure-cicd-demo"
   }
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
-
     stage('Secret Detection') {
       steps {
         sh '''
           docker run --rm -v $(pwd):/repo zricethezav/gitleaks:latest \
-            detect --source=/repo --report-format=json --report-path=/repo/gitleaks-report.json --exit-code=1 || true
+            detect --source=/repo --report-format=json --report-path=/repo/gitleaks-report.json --exit-code=1
         '''
       }
       post {
@@ -24,7 +22,6 @@ pipeline {
         }
       }
     }
-
     stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv('sonarqube-server') {
@@ -41,50 +38,48 @@ pipeline {
         }
       }
     }
-
     stage('Quality Gate') {
-  steps {
-    sleep(time: 20, unit: 'SECONDS')
-    timeout(time: 10, unit: 'MINUTES') {
-      waitForQualityGate abortPipeline: true
+      steps {
+        sleep(time: 20, unit: 'SECONDS')
+        timeout(time: 10, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
     }
-  }
-}
-stage('OWASP Dependency Check') {
-  steps {
-    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
-      sh '''
-        mkdir -p dependency-check-report
-        docker run --rm -u $(id -u):$(id -g) -v $(pwd):/src owasp/dependency-check:latest \
-          --scan /src --format "HTML" --format "JSON" \
-          --failOnCVSS 7 --out /src/dependency-check-report \
-          --project cicd-demo-app \
-          --nvdApiKey $NVD_API_KEY
-      '''
+    stage('OWASP Dependency Check') {
+      steps {
+        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+          sh '''
+            mkdir -p dependency-check-report
+            docker run --rm -u $(id -u):$(id -g) -v $(pwd):/src owasp/dependency-check:latest \
+              --scan /src --format "HTML" --format "JSON" \
+              --failOnCVSS 7 --out /src/dependency-check-report \
+              --project cicd-demo-app \
+              --nvdApiKey $NVD_API_KEY
+          '''
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
+        }
+      }
     }
-  }
-  post {
-    always {
-      archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
-    }
-  }
-}    stage('Build Image') {
+    stage('Build Image') {
       steps {
         sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
       }
     }
-
     stage('Trivy Image Scan') {
       steps {
         sh '''
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image \
-            --severity HIGH,CRITICAL --exit-code 0 --format table \
+            --severity HIGH,CRITICAL --exit-code 1 --format table \
             $IMAGE:${BUILD_NUMBER}
         '''
       }
     }
-
     stage('Push Image') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'U', passwordVariable: 'P')]) {
@@ -95,7 +90,6 @@ stage('OWASP Dependency Check') {
         }
       }
     }
-
     stage('Deploy to Kubespray') {
       steps {
         withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
