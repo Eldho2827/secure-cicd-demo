@@ -11,6 +11,20 @@ pipeline {
       }
     }
 
+    stage('Secret Detection') {
+      steps {
+        sh '''
+          docker run --rm -v $(pwd):/repo zricethezav/gitleaks:latest \
+            detect --source=/repo --report-format=json --report-path=/repo/gitleaks-report.json --exit-code=1 || true
+        '''
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+        }
+      }
+    }
+
     stage('SonarQube Analysis') {
       steps {
         withSonarQubeEnv('sonarqube-server') {
@@ -36,9 +50,36 @@ pipeline {
       }
     }
 
+    stage('OWASP Dependency Check') {
+      steps {
+        sh '''
+          docker run --rm -v $(pwd):/src owasp/dependency-check:latest \
+            --scan /src --format "HTML" --format "JSON" \
+            --failOnCVSS 7 --out /src/dependency-check-report \
+            --project cicd-demo-app || true
+        '''
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
+        }
+      }
+    }
+
     stage('Build Image') {
       steps {
         sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
+      }
+    }
+
+    stage('Trivy Image Scan') {
+      steps {
+        sh '''
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image \
+            --severity HIGH,CRITICAL --exit-code 0 --format table \
+            $IMAGE:${BUILD_NUMBER}
+        '''
       }
     }
 
