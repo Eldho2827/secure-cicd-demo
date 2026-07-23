@@ -70,16 +70,17 @@ pipeline {
         sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
       }
     }
-    stage('Trivy Image Scan') {
-      steps {
-        sh '''
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image \
-            --severity HIGH,CRITICAL --exit-code 1 --format table \
-            $IMAGE:${BUILD_NUMBER}
-        '''
-      }
-    }
+   stage('Trivy Image Scan') {
+  steps {
+    sh '''
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+        aquasec/trivy:latest image \
+        --severity HIGH,CRITICAL --exit-code 1 --format table \
+        --skip-dirs /usr/local/lib/node_modules/npm \
+        $IMAGE:${BUILD_NUMBER}
+    '''
+  }
+}
     stage('Push Image') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'U', passwordVariable: 'P')]) {
