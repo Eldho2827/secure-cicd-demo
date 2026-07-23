@@ -50,24 +50,25 @@ pipeline {
     }
   }
 }
-
-   stage('OWASP Dependency Check') {
+stage('OWASP Dependency Check') {
   steps {
-    sh '''
-      mkdir -p dependency-check-report
-      docker run --rm -u $(id -u):$(id -g) -v $(pwd):/src owasp/dependency-check:latest \
-        --scan /src --format "HTML" --format "JSON" \
-        --failOnCVSS 7 --out /src/dependency-check-report \
-        --project cicd-demo-app
-    '''
+    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+      sh '''
+        mkdir -p dependency-check-report
+        docker run --rm -u $(id -u):$(id -g) -v $(pwd):/src owasp/dependency-check:latest \
+          --scan /src --format "HTML" --format "JSON" \
+          --failOnCVSS 7 --out /src/dependency-check-report \
+          --project cicd-demo-app \
+          --nvdApiKey $NVD_API_KEY
+      '''
+    }
   }
   post {
     always {
       archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
     }
   }
-}
-    stage('Build Image') {
+}    stage('Build Image') {
       steps {
         sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
       }
