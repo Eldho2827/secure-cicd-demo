@@ -52,10 +52,11 @@ pipeline {
           sh '''
             mkdir -p dependency-check-report
             docker run --rm -u $(id -u):$(id -g) -v $(pwd):/src owasp/dependency-check:latest \
-              --scan /src --format "HTML" --format "JSON" \
-              --failOnCVSS 7 --out /src/dependency-check-report \
-              --project cicd-demo-app \
-              --nvdApiKey $NVD_API_KEY
+  --scan /src --format "HTML" --format "JSON" \
+  --failOnCVSS 7 --out /src/dependency-check-report \
+  --project cicd-demo-app \
+  --nvdApiKey $NVD_API_KEY \
+  --noupdate
           '''
         }
       }
