@@ -3,5 +3,5 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": { "start": "node app.js", "test": "echo \"no tests yet\" && exit 0" },
-  "dependencies": { "express": "^4.19.2" }
+  "dependencies": { "express": "^4.21.2" }
 }
